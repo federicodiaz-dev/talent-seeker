@@ -1,0 +1,26 @@
+name: 01. Update Issue Template with Project Name
+
+on:
+  workflow_dispatch:
+
+jobs:
+  update-template:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout main branch
+      uses: actions/checkout@v4
+      with:
+        ref: main
+          
+    - name: Replace placeholder in template
+      run: |
+        sed -i "s/{{PROJECT_NAME}}/${{ vars.PROJECT_NAME }}/g" .github/ISSUE_TEMPLATE/feature_request.md
+
+    - name: Commit and push changes
+      run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+        git add .github/ISSUE_TEMPLATE/feature_request.md
+        git commit -m "Update template with project name: ${{ github.event.inputs.project_name }}" || echo "No changes to commit"
+        git push origin main

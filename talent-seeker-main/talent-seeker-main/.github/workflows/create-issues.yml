@@ -1,0 +1,46 @@
+name: 02. Create GitHub Issues from Parameter
+
+on:
+  workflow_dispatch:
+    inputs:
+      issues:
+        description: "List of issues (one per line)"
+        required: true
+        default: "First issue from input,Second issue from input"
+
+jobs:
+  create-issues:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repo
+      uses: actions/checkout@v4
+
+    - name: Normalize line endings
+      run: |
+        tr -d '\r' < .github/ISSUE_TEMPLATE/feature_request.md > temp.md
+        mv temp.md .github/ISSUE_TEMPLATE/feature_request.md
+
+    - name: Create issues from input
+      run: |
+        # Split the comma-separated list into array
+        IFS=',' read -r -a issues_array <<< "${{ github.event.inputs.issues }}"
+    
+        for issue in "${issues_array[@]}"; do
+          if [ -n "$issue" ]; then
+            echo "Creating issue: $issue"
+            
+            # Read template fresh each time
+            BODY=$(cat .github/ISSUE_TEMPLATE/feature_request.md)
+            # Replace placeholder
+            BODY="${BODY//'{{TITLE}}'/$issue}"
+    
+            # Now create issue
+            gh issue create \
+              --title "[${{ vars.PROJECT_NAME }}] $issue" \
+              --body "$BODY" \
+              --label "needs refinement"
+          fi
+        done
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
